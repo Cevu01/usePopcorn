@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 
+import StarRating from "./StarRating.js";
+
 const tempMovieData = [
   {
     imdbID: "tt1375666",
@@ -67,6 +69,10 @@ export default function App() {
   function handleCloseMovie() {
     setSelectedId(null);
   }
+
+  function handleAddWatched(movie) {
+    setWatched((watched) => [...watched, movie]);
+  }
   useEffect(
     function () {
       async function fetchMovies() {
@@ -113,12 +119,7 @@ export default function App() {
         <Box>
           {isLoading && <Loader />}
           {!isLoading && !error && (
-            <MovieList
-              movies={movies}
-              onSelectMovie={handleSelectMovie}
-              onCloseMovie={handleCloseMovie}
-              selectedId={selectedId}
-            />
+            <MovieList movies={movies} onSelectMovie={handleSelectMovie} />
           )}
           {error && <ErrorMessage message={error} />}
         </Box>
@@ -128,6 +129,7 @@ export default function App() {
             <MovieDetails
               selectedId={selectedId}
               onCloseMovie={handleCloseMovie}
+              onAddWatched={handleAddWatched}
             />
           ) : (
             <>
@@ -225,13 +227,87 @@ function Movie({ movie, onSelectMovie }) {
   );
 }
 
-function MovieDetails({ selectedId, onCloseMovie }) {
+function MovieDetails({ selectedId, onCloseMovie, onAddWatched }) {
+  const [movie, setMovie] = useState({});
+  const [isLoading, setIsLoading] = useState(false);
+  const [userRating, setUserRating] = useState("");
+
+  function handleAdd() {
+    const newWatchedMovie = {
+      imdbID: selectedId,
+      title: movie.Title,
+      poster: movie.Poster,
+      year: movie.Year,
+      imdbRating: Number(movie.imdbRating),
+      runtime: Number(movie.Runtime.split(" ").at(0)),
+      userRating,
+    };
+    onAddWatched(newWatchedMovie);
+    onCloseMovie();
+  }
+
+  useEffect(
+    function () {
+      if (!selectedId) return;
+      async function getMoviesDetails() {
+        setIsLoading(true);
+        const res = await fetch(
+          `http://www.omdbapi.com/?apikey=${KEY}&i=${selectedId}`
+        );
+        const data = await res.json();
+        setMovie(data);
+        setIsLoading(false);
+      }
+      getMoviesDetails();
+    },
+    [selectedId]
+  );
   return (
     <div className="details">
-      <button className="btn-back" onClick={onCloseMovie}>
-        &larr;
-      </button>
-      {selectedId}
+      {isLoading ? (
+        <Loader />
+      ) : (
+        <>
+          <header>
+            <button className="btn-back" onClick={onCloseMovie}>
+              &larr;
+            </button>
+            <img src={movie.Poster} alt={`Poster of ${movie.Title} movie`} />
+
+            <div className="details-overview">
+              <h4>{movie.Title}</h4>
+              <p>
+                {movie.Released} &bull; {movie.Runtime}
+              </p>
+              <p>{movie.Genre}</p>
+              <p>
+                <span>⭐</span>
+                {movie.imdbRating} IMDB Rating
+              </p>
+            </div>
+          </header>
+
+          <section>
+            <div className="rating">
+              <StarRating
+                maxRating={10}
+                size={24}
+                onSetRating={setUserRating}
+              />
+              {userRating > 0 && (
+                <button className="btn-add" onClick={handleAdd}>
+                  + Add to list
+                </button>
+              )}
+            </div>
+            <p>
+              <em>{movie.Plot}</em>
+            </p>
+            <p>Starring {movie.Actors}</p>
+            <p>Director: {movie.Director}</p>
+          </section>
+        </>
+      )}
     </div>
   );
 }
@@ -278,8 +354,8 @@ function WatchedMovieList({ watched }) {
 function WatchedMovie({ movie }) {
   return (
     <li>
-      <img src={movie.Poster} alt={`${movie.Title} poster`} />
-      <h3>{movie.Title}</h3>
+      <img src={movie.poster} alt={`${movie.title} poster`} />
+      <h3>{movie.title}</h3>
       <div>
         <p>
           <span>⭐️</span>
