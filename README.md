@@ -1,3 +1,3 @@
-# Fully reusable star rating component
+# Almoust finished app
 
-Customize as you like by passing props such as maxRating, color, size, messages, defaultRating
+Now you can search for movie, select if you watched it and rate it...
