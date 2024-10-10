@@ -1,3 +1,3 @@
-# Almoust finished app
+# Finished app
 
-Now you can search for movie, select if you watched it and rate it...
+Fully functional application with all features
